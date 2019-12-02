@@ -20,3 +20,10 @@ using Test
 
 @test Iris.labels() isa Vector{String}
 @test size(Iris.labels()) == (150,)
+
+@test size(COCO.test_images()) = (10,)
+@test size(COCO.train_images()) = (100,)
+@test size(COCO.val_images()) = (20,)
+@test size(COCO.test_labels()) = (10)
+@test size(COCO.train_labels()) = (100,)
+@test size(COCO.val_labels()) = (20,)

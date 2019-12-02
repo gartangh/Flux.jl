@@ -42,4 +42,7 @@ using .Sentiment
 include("iris.jl")
 export Iris
 
+include("coco.jl")
+export COCO
+
 end
