@@ -1,4 +1,4 @@
-using NNlib: conv, ∇conv_data, output_size
+using NNlib: conv, ∇conv_data, output_size, group_count, channels_in
 
 # pad dims of x with dims of y until ndims(x) == ndims(y)
 _paddims(x::Tuple, y::Tuple) = (x..., y[(end - (length(y) - length(x) - 1)):end]...)
@@ -133,8 +133,8 @@ function (c::Conv)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  @show b
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=1)
+  # @assert group_count(cdims) == 1 DimensionMismatch("Group count is expected to be 1; (1) vs. $(group_count(cdims)))")
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
@@ -236,11 +236,11 @@ function conv_transpose_dims(c::ConvTranspose, x::AbstractArray)
     I = (size(x)[1:end-2] .- 1).*c.stride .+ 1 .+ (size(c.weight)[1:end-2] .- 1).*c.dilation .- combined_pad
     C_in = size(c.weight)[end-1]
     batch_size = size(x)[end]
-    # Create DenseConvDims() that looks like the corresponding conv()
-    return DenseConvDims((I..., C_in, batch_size), size(c.weight);
-                        stride=c.stride,
-                        padding=c.pad,
-                        dilation=c.dilation,
+    # Create ConvDims() that looks like the corresponding conv()
+    return ConvDims((I..., C_in, batch_size), size(c.weight);
+        stride=c.stride,
+        padding=c.pad,
+        dilation=c.dilation,
     )
 end
 
@@ -299,7 +299,6 @@ struct DepthwiseConv{N,M,F,A,V}
   groupcount::Int
 end
 
-<<<<<<< HEAD
 """
     DepthwiseConv(weight::AbstractArray, bias::AbstractArray)
     DepthwiseConv(weight::AbstractArray, bias::AbstractArray, activation)
@@ -309,30 +308,22 @@ forward pass.
 
 Setting `bias` to `Flux.Zeros()` would switch `bias` off for the layer.
 
-Takes the keyword arguments `pad`, `stride` and `dilation`.
+Takes the keyword arguments `pad`, `stride`, `dilation` and `groupcount`.
 
 For keyword-only constuctor, see also [`Conv`](@ref)
 """
-function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
-                      stride = 1, pad = 0, dilation = 1) where {T,N}
-=======
 # TODO groupcount should be inferred.
-function DepthwiseConv(w::AbstractArray{T,N}, b::AbstractVector{T}, σ = identity;
-                       stride = 1, pad = 0, dilation = 1, groupcount =  1) where {T,N}
->>>>>>>
+function DepthwiseConv(w::AbstractArray{T,N}, b::Union{Zeros, AbstractVector{T}}, σ = identity;
+                      stride = 1, pad = 0, dilation = 1, groupcount = 1) where {T,N}
   stride = expand(Val(N-2), stride)
   dilation = expand(Val(N-2), dilation)
-<<<<<<< HEAD
   pad = calc_padding(pad, size(w)[1:N-2], dilation, stride)
-  return DepthwiseConv(σ, w, b, stride, pad, dilation)
-=======
   return DepthwiseConv(σ, w, b, stride, pad, dilation, groupcount)
->>>>>>>
 end
 
 function DepthwiseConv(;weight::AbstractArray{T,N}, bias::Union{Zeros, AbstractVector{T}},
-                      activation = identity, stride = 1, pad = 0, dilation = 1) where {T,N}
-  DepthwiseConv(weight, bias, activation, stride = stride, pad = pad, dilation = dilation)
+                      activation = identity, stride = 1, pad = 0, dilation = 1, groupcount = 1) where {T,N}
+  DepthwiseConv(weight, bias, activation, stride = stride, pad = pad, dilation = dilation, groupcount = groupcount)
 end
 
 """
@@ -350,22 +341,13 @@ depthwiseconvfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
                     init = glorot_uniform) where N = init(filter..., div(ch[2], ch[1]), ch[1])
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-<<<<<<< HEAD
-                      init = glorot_uniform, stride = 1, pad = 0, dilation = 1,
-                      weight = depthwiseconvfilter(k, ch, init = init), bias = zeros(ch[2])) where N
-  @assert ch[2] % ch[1] == 0 "Output channels must be integer multiple of input channels"
-
-  return DepthwiseConv(
-    weight,
-    bias,
-=======
-     init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groupcount=1) where N
+                      init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groupcount=1
+                      weight = init(k..., div(ch[1], groupcount), ch[2]), bias = zeros(ch[2])) where N
   @assert ch[2] % groupcount == 0 "Output channels must be integer multiple of input channels"
   @assert ch[1] % groupcount == 0 "Input channels must be interger multiples of groupcount"
   return DepthwiseConv(
-    init(k..., div(ch[1], groupcount), ch[2]),
-    zeros(ch[2]),
->>>>>>>
+    weight,
+    bias,
     σ;
     stride = stride,
     pad = pad,
@@ -377,14 +359,16 @@ end
 @functor DepthwiseConv
 
 # TODO may not necessary
-function depthwiseconv(x, w, ddims::DenseConvDims)
-  ddims = DenseConvDims(ddims)
+function depthwiseconv(x, w, ddims::ConvDims)
+  # @assert x[end-1] == channels_in(cdims) DimensionMismatch("Data input channel count ($(x[M-1]) vs. $(channels_in(cdims)))")
+  ddims = ConvDims(ddims)
   return conv(x, w, ddims)
 end
 
 function (c::DepthwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  @assert group_count(cdims) == channels_in(cdims) DimensionMismatch("Data input channel count ≠ group count ($(group_count(cdims)) ≠ $(channels_in(cdims)))")
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
@@ -402,10 +386,8 @@ end
 (a::DepthwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
 
-<<<<<<< HEAD
 outdims(l::DepthwiseConv, isize) =
   output_size(DepthwiseConvDims(_paddims(isize, (1, 1, size(l.weight)[end], 1)), size(l.weight); stride = l.stride, padding = l.pad, dilation = l.dilation))
-=======
 
 """
     GroupwiseConv(size, in=>out)
@@ -457,15 +439,14 @@ end
 @functor GroupwiseConv
 
 # TODO may not necessary
-function groupwiseconv(x, w, ddims::DenseConvDims)
-  ddims = DenseConvDims(ddims)
+function groupwiseconv(x, w, ddims::ConvDims)
+  ddims = ConvDims(ddims)
   return conv(x, w, ddims)
 end
 
 function (c::GroupwiseConv)(x)
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  @info b, c.bias
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation, groupcount=c.groupcount)
   σ.(conv(x, c.weight, cdims) .+ b)
 end
 
@@ -482,8 +463,6 @@ end
 
 (a::GroupwiseConv{<:Any,<:Any,W})(x::AbstractArray{<:Real}) where {T <: Union{Float32,Float64}, W <: AbstractArray{T}} =
   a(T.(x))
-
->>>>>>>
 
 """
     CrossCor(filter, in=>out)
@@ -560,8 +539,8 @@ end
 
 @functor CrossCor
 
-function crosscor(x, w, ddims::DenseConvDims)
-  ddims = DenseConvDims(ddims, F=true)
+function crosscor(x, w, ddims::ConvDims)
+  ddims = ConvDims(ddims, F=true)
   return conv(x, w, ddims)
 end
 
@@ -569,7 +548,7 @@ function (c::CrossCor)(x::AbstractArray)
   # TODO: breaks gpu broadcast :(
   # ndims(x) == ndims(c.weight)-1 && return squeezebatch(c(reshape(x, size(x)..., 1)))
   σ, b = c.σ, reshape(c.bias, map(_->1, c.stride)..., :, 1)
-  cdims = DenseConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
+  cdims = ConvDims(x, c.weight; stride=c.stride, padding=c.pad, dilation=c.dilation)
   σ.(crosscor(x, c.weight, cdims) .+ b)
 end
 
@@ -645,7 +624,6 @@ end
 Max pooling layer. `k` is the size of the window for each dimension of the input.
 
 Use `pad=SamePad()` to apply padding so that outputsize == inputsize / stride.
-=======
 """
 struct MaxPool{N,M}
   k::NTuple{N,Int}
