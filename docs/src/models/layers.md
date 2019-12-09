@@ -36,6 +36,7 @@ Flux.reset!
 ```
 
 ## Other General Purpose Layers
+
 These are marginally more obscure than the Basic Layers.
 But in contrast to the layers described in the other sections are not readily grouped around a particular purpose (e.g. CNNs or RNNs).
 
@@ -70,7 +71,11 @@ trainmode!
 ```
 
 ## Cost Functions
+
+Cost/loss functions.
+
 ```@docs
+<<<<<<< HEAD
 Flux.mae
 Flux.mse
 Flux.msle
@@ -79,10 +84,23 @@ Flux.crossentropy
 Flux.logitcrossentropy
 Flux.binarycrossentropy
 Flux.logitbinarycrossentropy
+Flux.focalloss
+Flux.logitfocalloss
+Flux.binaryfocalloss
+Flux.logitbinaryfocalloss
 Flux.kldivergence
 Flux.poisson
 Flux.hinge
 Flux.squared_hinge
 Flux.dice_coeff_loss
 Flux.tversky_loss
+```
+>>>>>>> eeeba155... small updates
+
+## Other General Purpose Functions
+
+Transformations that operate on tensors, but that are not activation functions or cost functions.
+
+```@docs
+normalise
 ```

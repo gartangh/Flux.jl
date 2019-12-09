@@ -19,8 +19,8 @@ include("optimise/Optimise.jl")
 using .Optimise
 using .Optimise: @epochs
 export SGD, Descent, ADAM, Momentum, Nesterov, RMSProp,
-  ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
-  ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
+       ADAGrad, AdaMax, ADADelta, AMSGrad, NADAM,
+       ADAMW, RADAM, InvDecay, ExpDecay, WeightDecay
 
 
 using CuArrays
@@ -31,6 +31,17 @@ include("onehot.jl")
 include("functor.jl")
 
 include("layers/stateless.jl")
+export absoluteerror, ae, absolute_error, meanabsoluteerror, mae, mean_absolute_error,
+       squarederror, se, squared_error, meansquarederror, mse, mean_squared_error,
+       crossentropy, ce, cce, categoricalcrossentropy, categorical_crossentropy,
+       logitcrossentropy, lce, lcce, logit_crossentropy, logitcategoricalcrossentropy, logit_categorical_crossentropy,
+       binarycrossentropy, bce, binary_crossentropy,
+       logitbinarycrossentropy, lbce, logit_binary_crossentropy,
+       focalloss, fl, cfl, focal_loss, categoricalfocalloss, categorical_focal_loss,
+       logitfocalloss, lfl, lcfl, logit_focal_loss, logitcategoricalfocalloss, logit_categorical_focal_loss,
+       binaryfocalloss, bfl, binary_focal_loss,
+       logitbinaryfocalloss, lbfl, logit_binary_focal_loss,
+       normalise
 include("layers/basic.jl")
 include("layers/conv.jl")
 include("layers/recurrent.jl")
