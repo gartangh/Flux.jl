@@ -132,7 +132,7 @@ import Flux: activations
       @test group3.split == true
       group4 = GroupedConvolutions(+, path1, path2, path3, path4, split=true)
       @test size(group4.paths, 1) == 4
-      @test group4.split ==true
+      @test group4.split == true
     end
 
     @testset "sum split" begin

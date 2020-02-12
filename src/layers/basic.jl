@@ -228,7 +228,7 @@ function Base.show(io::IO, b::SkipConnection)
 end
 
 """
-    GroupedConvolutions(connection, paths, split)
+    GroupedConvolutions(connection, paths..., split=false)
 
 Creates a group of convolutions from a set of layers or chains of consecutive layers.
 Proposed in [Alexnet](http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networ).
@@ -240,6 +240,8 @@ If split is true, the feature maps of the input are evenly distributed across al
 Data should be stored in WHCN order (width, height, # channels, # batches).
 In other words, a 100×100 RGB image would be a `100×100×3×1` array,
 and a batch of 50 would be a `100×100×3×50` array.
+
+`GroupedConvolutions` also supports indexing and slicing, e.g. `group[2]` or `group[1:end-1]` and `group[1:3]` will return the first three paths.
 
 The names of the variables are consistent accross all examples:
 `i` stands for input,
@@ -298,14 +300,14 @@ o = g(i)
 ```
 """
 struct GroupedConvolutions{T<:Tuple}
-  connection  # user can pass arbitrary connections here, such as (a,b) -> a + b
   paths::T
+  connection  # user can pass arbitrary connections here, such as (a,b) -> a + b
   split::Bool
 
   function GroupedConvolutions(connection, paths...; split::Bool=false)
     npaths = size(paths, 1)
     npaths > 1 || error("the number of paths (", npaths, ") is not greater than 1")
-    new{typeof(paths)}(connection, paths, split)
+    new{typeof(paths)}(paths, connection, split)
   end
 end
 
@@ -439,8 +441,8 @@ function Base.show(io::IO, shuffle::ChannelShuffle)
 end
 
 """
-    ShuffledGroupedConvolutions(connection, paths, split)
     ShuffledGroupedConvolutions(group, shuffle)
+    ShuffledGroupedConvolutions(connection, paths..., split=false)
 
 A wrapper around a subsequent `GroupedConvolutions` and `ChannelShuffle`.
 Takes the number of paths in the grouped convolutions to be the number of groups in the channel shuffling operation.
