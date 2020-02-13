@@ -406,11 +406,10 @@ o  = g(i)
 """
 struct ChannelShuffle
   ngroups::Int
-end
-
-function ChannelShuffle(ngroups::Int)
-  ngroups > 1 || error("the number of groups (", ngroups, ") is not greater than 1")
-  ChannelShuffle(ngroups)
+  function ChannelShuffle(ngroups::Int)
+    ngroups > 1 || error("the number of groups (", ngroups, ") is not greater than 1")
+    new(ngroups)
+  end
 end
 
 @functor ChannelShuffle
@@ -477,14 +476,14 @@ o  = s(i)
 struct ShuffledGroupedConvolutions
   group::GroupedConvolutions
   shuffle::ChannelShuffle
-end
 
-function ShuffledGroupedConvolutions(group::GroupedConvolutions, shuffle::ChannelShuffle)
-  shuffle.ngroups == size(group.paths, 1) || error("the number of groups in the ChannelShuffle layer (", shuffle.ngroups, ") is not equal to the number of paths in the GroupedConvolutions (", size(group.paths, 1), ")")
-  ShuffledGroupedConvolutions(group, shuffle)
-end
+  function ShuffledGroupedConvolutions(group::GroupedConvolutions, shuffle::ChannelShuffle)
+    shuffle.ngroups == size(group.paths, 1) || error("the number of groups in the ChannelShuffle layer (", shuffle.ngroups, ") is not equal to the number of paths in the GroupedConvolutions (", size(group.paths, 1), ")")
+    new(group, shuffle)
+  end
 
-ShuffledGroupedConvolutions(connection, paths...; split::Bool=false) = ShuffledGroupedConvolutions(GroupedConvolutions(connection, paths..., split=split), ChannelShuffle(size(paths, 1)))
+  ShuffledGroupedConvolutions(connection, paths...; split::Bool=false) = new(GroupedConvolutions(connection, paths..., split=split), ChannelShuffle(size(paths, 1)))
+end
 
 @functor ShuffledGroupedConvolutions
 
