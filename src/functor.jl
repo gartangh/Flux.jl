@@ -29,9 +29,7 @@ isleaf(x) = functor(x)[1] === ()
 
 function fmap1(f, x)
   func, re = functor(x)
-  println("fmap1: func=", func)
   re(map(f, func))
-  println("fmap1: f=", f,"func=", func)
 end
 
 function fmap(f, x; cache = IdDict())
