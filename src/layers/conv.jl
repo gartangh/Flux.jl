@@ -341,7 +341,7 @@ depthwiseconvfilter(filter::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer};
                     init = glorot_uniform) where N = init(filter..., div(ch[2], ch[1]), ch[1])
 
 function DepthwiseConv(k::NTuple{N,Integer}, ch::Pair{<:Integer,<:Integer}, σ = identity;
-                      init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groupcount=1
+                      init = glorot_uniform, stride = 1, pad = 0, dilation = 1, groupcount = 1,
                       weight = init(k..., div(ch[1], groupcount), ch[2]), bias = zeros(ch[2])) where N
   @assert ch[2] % groupcount == 0 "Output channels must be integer multiple of input channels"
   @assert ch[1] % groupcount == 0 "Input channels must be interger multiples of groupcount"
