@@ -13,7 +13,7 @@ export gradient
 
 export Chain, Dense, Maxout, RNN, LSTM, GRU, SamePad, Conv, CrossCor, ConvTranspose,
        AdaptiveMaxPool, AdaptiveMeanPool, GlobalMaxPool, GlobalMeanPool, MaxPool,
-       MeanPool, flatten, DepthwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm,
+       MeanPool, flatten, DepthwiseConv, GroupwiseConv, Dropout, AlphaDropout, LayerNorm, BatchNorm,
        InstanceNorm, GroupNorm, SkipConnection, params, fmap, cpu, gpu, f32, f64,
        testmode!, trainmode!
 
@@ -43,7 +43,7 @@ include("layers/normalise.jl")
 include("data/Data.jl")
 
 include("losses/Losses.jl")
-using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12 
+using .Losses # TODO: stop importing Losses in Flux's namespace in v0.12
 
 include("deprecations.jl")
 
